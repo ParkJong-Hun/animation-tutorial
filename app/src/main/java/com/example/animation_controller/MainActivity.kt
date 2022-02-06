@@ -5,7 +5,7 @@ import android.os.Bundle
 
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(sa vedInstanceState)
+        super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
     }
 }
@@ -151,6 +151,19 @@ class MainActivity : AppCompatActivity() {
             -애니메이터 조합: 애니메이션을 함께 또는 순차적으로 재생하거나 지정된 지연 시간 후에 재생하는 논리 조합으로 그룹화할 수 있음.
             -프레임 새로고침 지연: 애니메이션 프레임의 새로 고침 빈도를 지정 가능. 기본값은 10ms마다 새로고치도록 설정하지만, 애플리케이션에서 프레임을 새로고침할 수
             있는 속도는 궁극적으로 시스템의 전반적인 시스템에서 기본 타이머를 제공하는 속도에 따라 달라짐.
+
+            -작동 방식
+            ValueAnimator 객체를 통해 애니메이션 실행 시간 및 애니메이션으로 표시되는 속성의 현재 값과 같은 애니메이션의 타이밍 추적.
+            애니메이션의 보간을 정의하는 TimeInterpolator와 애니메이션으로 보여주는 속성 값의 계산 방법을 정의하는 TypeEvaluator를 캡슐화함.
+            애니메이션을 시작하려면 ValueAnimator를 만들고 애니메이션으로 보여줄 속성의 시작, 끝 값고 함께 애니메이션 재생 시간을 지정.
+            start()를 호출해 애니메이션을 시작. 전체 애니메이션 중 ValueAnimator에서는 애니메이션 재생 시간과 경과 시간에 따라 0과 1 사이의 경과된 비율 계산.
+            경과된 비율은 애니메이션이 완료된 시간의 비율을 나타내며 0은 0%를 의미, 1은 100%를 의미.
+            경과된 비율을 계산하면 현재 설정된 TimeInterpolator를 호출해 보간된 비율을 계산. 보간된 비율을 통해 설정된 시간 보간을 고려해 새 비율에 경과된 비율 매핑.
+            보간된 비율을 계산할 때, ValueAnimator에서는 적절한 TtypeEvaluator를 호출해 보간된 비율, 애니메이션의 시작, 종교 값에 따라 애니메이션으로 보여줄 속성 값 계산.
+            1. 선형 애니메이션
+            객체가 일정한 속도로 움작임.
+            2. 비선형 애니메이션
+            가속, 감속 등이 가능. 일정한 속도로 움직이지 않음.
 
 
      */
