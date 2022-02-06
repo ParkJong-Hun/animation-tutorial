@@ -5,7 +5,7 @@ import android.os.Bundle
 
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
+        super.onCreate(sa vedInstanceState)
         setContentView(R.layout.activity_main)
     }
 }
@@ -119,6 +119,40 @@ class MainActivity : AppCompatActivity() {
     현재 레이아웃 내에서 뷰를 옮기거나 표시하거나 숨기려면 Android3.0(API 11)이상에서 사용할 수 있는 "android.animation 패키지의
     속성 애니메이션 시스템"을 사용하면 됨. 일정 기간 동안 View 객체의 속성을 업데이트해 속성이 변경되면 뷰를 계속 다시 그림.
     최소한의 노력우로 이런 애니메이션을 만들려면 레이아웃에서 애니메이션을 사용 설정.
+        -레이아웃 업데이트 자동 애니메이션 처리
+        개발자가 레이아웃들 변경할 때마다 시스템에서 실행되는 미리 로드된 애니메이션 제공. 개발자는 레이아웃에 속성을 설정해 이러한 레이아웃 변경을
+        애니메이션 처리하도록 시스템에 알려주기만 하면 됨.
+
+            -레이아웃 만들기
+            액티비티의 레이아웃 XML 파일에서 애니메이션을 사용 설정할 레이아웃의 android:animatedLayoutChanges 속성을 true로 설정.
+                -예시
+                <LinearLayout android:id="@+id/container"
+                    android:animateLayoutChanges="true"
+                    ...
+                />
+
+            -레이아웃에서 항목 추가, 업데이트 또는 삭제
+            이제 레이아웃에서 항목을 추가, 삭제 또는 업데이트하기만 하면 항목이 자동으로 애니메이션됨.
+                -예시
+                lateinit var containerView: ViewGroup
+                ...
+                private fun addItem() {
+                    val newView: View = ...
+
+                    containerView.addView(newView, 0)
+                }
+
+        -속성 애니메이션
+        거의 모든 항목을 애니메이션으로 만들 수 있는 강력항 프레임워크. 애니메이션을 정의하면 화면에 그리는지에 관계없이 시간 경과에 따라 객체 속성을 변경할 수 있음.
+        속성 애니메이션을 통해 지정된 시간 동안 속성 값을 변경. 특정 항목을 애니메이션으로 보여주려면 애니메이션화할 객체 속성 지정.
+            -재생 시간: 애니메이션 재생 시간을 지정할 수 있음. 기본 길이는 300ms
+            -시간 보간: 속성의 값이 애니메이션의 현재 경과 시간 함수로 계산되는 방식을 지정할 수 있음.
+            -반복 횟수 및 동작: 재생 시간이 끝나고 애니메이션 반복 횟수에 도달하면 애니메이션 반복 여부를 지정하 수 있음. 역방향 재생도 지정 가능.
+            -애니메이터 조합: 애니메이션을 함께 또는 순차적으로 재생하거나 지정된 지연 시간 후에 재생하는 논리 조합으로 그룹화할 수 있음.
+            -프레임 새로고침 지연: 애니메이션 프레임의 새로 고침 빈도를 지정 가능. 기본값은 10ms마다 새로고치도록 설정하지만, 애플리케이션에서 프레임을 새로고침할 수
+            있는 속도는 궁극적으로 시스템의 전반적인 시스템에서 기본 타이머를 제공하는 속도에 따라 달라짐.
+
+
      */
     /*물리학 기반 모션
     자연스러움을 위해 애니메이션에 실제 물리학을 적용해야 함.
