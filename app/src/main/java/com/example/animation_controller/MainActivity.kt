@@ -176,6 +176,118 @@ class MainActivity : AppCompatActivity() {
             보기 애니메이션에서 필요한 모든 작업을 수행하거나 기존 코드가 이미 원하는 대로 작동하는 경우 속성 애니메이션 시스템을 사용할 필요가 없음. 사용 사례가 생기면
             상황에 따라 두 애니메이션 시스템을 모두 사용할 수 있음.
 
+        -애니메이션으로 뷰 표시 또는 숨기기
+        앱 사용 시 오래돈 정보가 삭제되는 동안 새 정보가 화면에 표시되어야 함. 표시 내용이 빠르게 전환되면 부자연스럽게 보이거나 사용자가 화면에서 새 콘텐츠를 쉽게 놓칠 수 있다.
+        애니메이션을 사용하면 변화 속도가 느리고 움직임으로 사용자의 시선을 끌 수 있으므로 변경 사항을 더 분명하게 할 수 있음.
+        뷰를 표시하거나 숨길 때 흔히 사용하는 애니메이션에는 3가지가 있음.
+            1. 회전 표시 애니메이션
+            2. 크로스페이드 애니메이션
+            디졸브 애니메이션이라고도 함. 하나의 View 또는 ViewGroup을 점진적으로 페이드 아웃하는 동시에 다른 View 또는 ViewGroup을 페이드 인 함. 이 애니메이션은 앱에서
+            콘텐츠 또는 뷰를 전환하려는 경우 유용함. 여기에 표시된 크로스페이드 애니메이션에서는 Android3.1(API 12) 이상에 사용 가능한 ViewPropertAnimator를 사용함.
+                -뷰 만들기
+                먼저, 크로스페이드할 뷰를 두 개 만들어야 함.
+                <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent">
+
+                    <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+                        android:id="@+id/content"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent">
+
+                        <TextView style="?android:textAppearanceMedium"
+                            android:lineSpacingMultiplier="1.2"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="@string/lorem_ipsum"
+                            android:padding="16dp" />
+
+                    </ScrollView>
+
+                    <ProgressBar android:id="@+id/loading_spinner"
+                        style="?android:progressBarStyleLarge"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center" />
+
+                </FrameLayout>
+
+                -크로스페이드 애니메이션 설정
+                    1. 크로스페이드할 뷰의 멤버 변수를 만들어야 함. 나중에 애니메이션 중에 뷰를 수정할 때 필요.
+                    2. 페이드 인되는 뷰의 가시성을 GONE으로 설정. 이렇게 하면 뷰가 레이아웃 공간을 차지하지 않고 레이아웃 계산애서 생략되어 처리 속도가 빨라짐.
+                    3. 멤버 변수에서 config_shortAnimTime 시스템 속성을 캐시함. 이 속성은 애니메이션의 '짧은' 표준 재생 시간을 정의함.
+                    이러한 재생 시간은 섬세한 애니메아션 또는 자주 발생하는 애니메이션에서 이상적. 원한다면 config_longAnimTime 및 config_mediu,AnimTime도 사용할 수 있음.
+
+                class CrossfadeActivity : Activity() {
+
+                    private lateinit var contentView: View
+                    private lateinit var loadingView: View
+                    private var shortAnimationDuration: Int = 0
+
+                    ...
+
+                    override fun onCreate(savedInstanceState: Bundle?) {
+                        super.onCreate(savedInstanceState)
+                        setContentView(R.layout.activity_crossfade)
+
+                        contentView = findViewById(R.id.content)
+                        loadingView = findViewById(R.id.loading_spinner)
+
+                        // Initially hide the content view.
+                        contentView.visibility = View.GONE
+
+                        // Retrieve and cache the system's default "short" animation time.
+                        shortAnimationDuration = resources.getInteger(android.R.integer.config_shortAnimTime)
+                    }
+                    ...
+                }
+
+                -뷰 크로스페이드
+                이제 뷰가 적절히 설정되었으므로 다음 단계를 통해 뷰를 크로스페이드함.
+                    1. 페이드 인되는 뷰의 알파 값을 0으로 설정하고 가시성을 VISIBLE로 설정함.
+                    2. 페이드 인되는 뷰는 알파 값을 0에서 1로 애니메이션함. 페이드 아웃되는 뷰는 알파 값을 1에서 0으로 애니메이션 함.
+                    3. Animator.AnimatorListener에서 onAnimatorEnd()를 사용해 페이드 아웃된 뷰의 가시성을 GONE으로 설정함.
+                    알파 값이 0이더라도 뷰의 가시성을 GONE으로 설정하면 뷰가 레이아웃 공간을 차지하지 않고 레이아웃 계산에서 생략되어 처리 속도가 빨라짐.
+
+                class CrossfadeActivity : Activity() {
+
+                    private lateinit var contentView: View
+                    private lateinit var loadingView: View
+                    private var shortAnimationDuration: Int = 0
+
+                    ...
+
+                    private fun crossfade() {
+                        contentView.apply {
+                            // Set the content view to 0% opacity but visible, so that it is visible
+                            // (but fully transparent) during the animation.
+                            alpha = 0f
+                            visibility = View.VISIBLE
+
+                            // Animate the content view to 100% opacity, and clear any animation
+                            // listener set on the view.
+                            animate()
+                                    .alpha(1f)
+                                    .setDuration(shortAnimationDuration.toLong())
+                                    .setListener(null)
+                        }
+                        // Animate the loading view to 0% opacity. After the animation ends,
+                        // set its visibility to GONE as an optimization step (it won't
+                        // participate in layout passes, etc.)
+                        loadingView.animate()
+                                .alpha(0f)
+                                .setDuration(shortAnimationDuration.toLong())
+                                .setListener(object : AnimatorListenerAdapter() {
+                                    override fun onAnimationEnd(animation: Animator) {
+                                        loadingView.visibility = View.GONE
+                                    }
+                                })
+                    }
+                }
+
+
+
+            3. 카드플립 애니메이션
 
      */
     /*물리학 기반 모션
