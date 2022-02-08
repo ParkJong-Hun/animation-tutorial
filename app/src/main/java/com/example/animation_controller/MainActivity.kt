@@ -181,6 +181,71 @@ class MainActivity : AppCompatActivity() {
         애니메이션을 사용하면 변화 속도가 느리고 움직임으로 사용자의 시선을 끌 수 있으므로 변경 사항을 더 분명하게 할 수 있음.
         뷰를 표시하거나 숨길 때 흔히 사용하는 애니메이션에는 3가지가 있음.
             1. 회전 표시 애니메이션
+            표시 애니메이션은 UI 요소 그룹을 표시하거나 숨길 때 사용자에게 시각적 연속성을 제공.
+            ViewAnimationUtils.createCircularReveal() 메서드를 사용하면 뷰를 표시하거나 숨기도록 클리핑 서클을 애니메이션할 수 있음.
+            이 애니메이션은 Android5.0(API 21) 이상에서 사용할 수 있는 ViewAnimationUtils 클래스에 제공되어 있음.
+
+            // previously invisible view
+            val myView: View = findViewById(R.id.my_view)
+
+            // Check if the runtime version is at least Lollipop
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                // get the center for the clipping circle
+                val cx = myView.width / 2
+                val cy = myView.height / 2
+
+                // get the final radius for the clipping circle
+                val finalRadius = Math.hypot(cx.toDouble(), cy.toDouble()).toFloat()
+
+                // create the animator for this view (the start radius is zero)
+                val anim = ViewAnimationUtils.createCircularReveal(myView, cx, cy, 0f, finalRadius)
+                // make the view visible and start the animation
+                myView.visibility = View.VISIBLE
+                anim.start()
+            } else {
+                // set the view to invisible without a circular reveal animation below Lollipop
+                myView.visibility = View.INVISIBLE
+            }
+
+            ViewAnimationUtils.createCircularReveal() 애니메이션에는 5개의 매개변수가 사용됨. 첫 번째 매개변수는 화면에서 숨기거나
+            표시하려는 뷰. 그 다음 두 갸의 매개변수는 클리핑 서클 중심에 대한 x, y 좌표. 일반적으로 이 것이 뷰의 중심이 되지만, 사용자가 터치한
+            지점도 사용할 수 있음. 이 경우 사용자가 선택한 위치에서 애니메이션이 시작됨. 네번째 매개변수는 클리핑 서클의 시작 반지름.
+
+            // previously visible view
+            val myView: View = findViewById(R.id.my_view)
+
+            // Check if the runtime version is at least Lollipop
+            if (Build.VERSION.SDK_INT == Build.VERSION_CODES.LOLLIPOP) {
+                // get the center for the clipping circle
+                val cx = myView.width / 2
+                val cy = myView.height / 2
+
+                // get the initial radius for the clipping circle
+                val initialRadius = Math.hypot(cx.toDouble(), cy.toDouble()).toFloat()
+
+                // create the animation (the final radius is zero)
+                val anim = ViewAnimationUtils.createCircularReveal(myView, cx, cy, initialRadius, 0f)
+
+                // make the view invisible when the animation is done
+                anim.addListener(object : AnimatorListenerAdapter() {
+
+                    override fun onAnimationEnd(animation: Animator) {
+                        super.onAnimationEnd(animation)
+                        myView.visibility = View.INVISIBLE
+                    }
+                })
+
+                // start the animation
+                anim.start()
+            } else {
+                // set the view to visible without a circular reveal animation below Lollipop
+                myView.visibility = View.VISIBLE
+            }
+
+            이 경우 클리핑 서클의 초기 반지름 크기가 뷰와 같도록 설정되었기 때문에 애니메이션이 시작되기 전에 뷰가 표시됨. 최종 반지름이
+            0으로 설정되어 애니메이션이 끝나면 뷰가 숨겨짐. 애니메이션이 완료되면 뷰의 가시성을 INVISIBLE로 설정할 수 있도록 애니메이션에
+            리스너를 추가하는 것이 중요.
+
             2. 크로스페이드 애니메이션
             디졸브 애니메이션이라고도 함. 하나의 View 또는 ViewGroup을 점진적으로 페이드 아웃하는 동시에 다른 View 또는 ViewGroup을 페이드 인 함. 이 애니메이션은 앱에서
             콘텐츠 또는 뷰를 전환하려는 경우 유용함. 여기에 표시된 크로스페이드 애니메이션에서는 Android3.1(API 12) 이상에 사용 가능한 ViewPropertAnimator를 사용함.
@@ -288,7 +353,243 @@ class MainActivity : AppCompatActivity() {
 
 
             3. 카드플립 애니메이션
+            뒤집히는 카드를 에뮬레이션하는 애니메이션을 표시해 콘텐츠 뷰 간에 애니메이션함. 여기에 표시된 카드플립 애니메이션에서는 Android3.0(API 11) 이상에서 사용할 수 있는
+            FragmentTransaction을 사용함.
 
+                -Animation 개체 만들기
+                애니메이션을 만들려면 총 4개의 애니메이터가 필요함. 두 개의 애니메이터는 카드 앞면이 애니메이션되어 왼쪽으로 뒤집혔다가 왼쪽에서 넘어오도록 하는 데 필요함.
+                카드 뒷면이 애니메이션되어 오른쪽에서 넘어왔다가 오른쪽으로 뒤집히도록 하는 데에도 두 개의 애니메이터가 필요함.
+
+                card_flip_left_in.xml
+                <set xmlns:android="http://schemas.android.com/apk/res/android">
+                    <!-- Before rotating, immediately set the alpha to 0. -->
+                    <objectAnimator
+                        android:valueFrom="1.0"
+                        android:valueTo="0.0"
+                        android:propertyName="alpha"
+                        android:duration="0" />
+
+                    <!-- Rotate. -->
+                    <objectAnimator
+                        android:valueFrom="-180"
+                        android:valueTo="0"
+                        android:propertyName="rotationY"
+                        android:interpolator="@android:interpolator/accelerate_decelerate"
+                        android:duration="@integer/card_flip_time_full" />
+
+                    <!-- Half-way through the rotation (see startOffset), set the alpha to 1. -->
+                    <objectAnimator
+                        android:valueFrom="0.0"
+                        android:valueTo="1.0"
+                        android:propertyName="alpha"
+                        android:startOffset="@integer/card_flip_time_half"
+                        android:duration="1" />
+                </set>
+
+                card_flip_left_out.xml
+                <set xmlns:android="http://schemas.android.com/apk/res/android">
+                    <!-- Rotate. -->
+                    <objectAnimator
+                        android:valueFrom="0"
+                        android:valueTo="180"
+                        android:propertyName="rotationY"
+                        android:interpolator="@android:interpolator/accelerate_decelerate"
+                        android:duration="@integer/card_flip_time_full" />
+
+                    <!-- Half-way through the rotation (see startOffset), set the alpha to 0. -->
+                    <objectAnimator
+                        android:valueFrom="1.0"
+                        android:valueTo="0.0"
+                        android:propertyName="alpha"
+                        android:startOffset="@integer/card_flip_time_half"
+                        android:duration="1" />
+                </set>
+
+                card_flip_right_in.xml
+                <set xmlns:android="http://schemas.android.com/apk/res/android">
+                    <!-- Before rotating, immediately set the alpha to 0. -->
+                    <objectAnimator
+                        android:valueFrom="1.0"
+                        android:valueTo="0.0"
+                        android:propertyName="alpha"
+                        android:duration="0" />
+
+                    <!-- Rotate. -->
+                    <objectAnimator
+                        android:valueFrom="180"
+                        android:valueTo="0"
+                        android:propertyName="rotationY"
+                        android:interpolator="@android:interpolator/accelerate_decelerate"
+                        android:duration="@integer/card_flip_time_full" />
+
+                    <!-- Half-way through the rotation (see startOffset), set the alpha to 1. -->
+                    <objectAnimator
+                        android:valueFrom="0.0"
+                        android:valueTo="1.0"
+                        android:propertyName="alpha"
+                        android:startOffset="@integer/card_flip_time_half"
+                        android:duration="1" />
+                </set>
+
+                card_flip_right_out.xml
+                <set xmlns:android="http://schemas.android.com/apk/res/android">
+                    <!-- Rotate. -->
+                    <objectAnimator
+                        android:valueFrom="0"
+                        android:valueTo="-180"
+                        android:propertyName="rotationY"
+                        android:interpolator="@android:interpolator/accelerate_decelerate"
+                        android:duration="@integer/card_flip_time_full" />
+
+                    <!-- Half-way through the rotation (see startOffset), set the alpha to 0. -->
+                    <objectAnimator
+                        android:valueFrom="1.0"
+                        android:valueTo="0.0"
+                        android:propertyName="alpha"
+                        android:startOffset="@integer/card_flip_time_half"
+                        android:duration="1" />
+                </set>
+
+                -뷰 만들기
+                카드의 각 면은 원하는 콘텐츠를 포함할 수 있는 별개의 레이아웃. 두 레이아웃은 나중에 애니메이션할 프래그먼트에 사용됨.
+
+                <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:orientation="vertical"
+                        android:background="#a6c"
+                        android:padding="16dp"
+                        android:gravity="bottom">
+
+                        <TextView android:id="@android:id/text1"
+                            style="?android:textAppearanceLarge"
+                            android:textStyle="bold"
+                            android:textColor="#fff"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="@string/card_back_title" />
+
+                        <TextView style="?android:textAppearanceSmall"
+                            android:textAllCaps="true"
+                            android:textColor="#80ffffff"
+                            android:textStyle="bold"
+                            android:lineSpacingMultiplier="1.2"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="@string/card_back_description" />
+
+                </LinearLayout>
+
+                <ImageView xmlns:android="http://schemas.android.com/apk/res/android"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:src="@drawable/image1"
+                    android:scaleType="centerCrop"
+                    android:contentDescription="@string/description_image_1" />
+
+                -프래그먼트 만들기
+                카드의 앞면과 뒷면을 위한 프래그먼트 클래스를 만듦. 이러한 클래스는 각 프래그먼트의 onCreateView() 메서드에서 이전에 만든 레이아웃을 반환.
+                그러면 카드를 표시하고자 하는 상위 활동에서 이 프래그먼트의 인스턴스를 만들 수 있음.
+
+                class CardFlipActivity : FragmentActivity() {
+                    ...
+                    /**
+                     * A fragment representing the front of the card.
+                     */
+                    class CardFrontFragment : Fragment() {
+
+                        override fun onCreateView(
+                                inflater: LayoutInflater,
+                                container: ViewGroup?,
+                                savedInstanceState: Bundle?
+                        ): View = inflater.inflate(R.layout.fragment_card_front, container, false)
+                    }
+
+                    /**
+                     * A fragment representing the back of the card.
+                     */
+                    class CardBackFragment : Fragment() {
+
+                        override fun onCreateView(
+                                inflater: LayoutInflater,
+                                container: ViewGroup?,
+                                savedInstanceState: Bundle?
+                        ): View = inflater.inflate(R.layout.fragment_card_back, container, false)
+                    }
+                }
+
+                -카드 플립 애니메이션
+                상위 액티비티 내에 있는 프래그먼트를 표시. 이를 위해 액티비티에 관한 레이아웃을 먼저 만듦.
+
+                <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                    android:id="@+id/container"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent" />
+
+                액티비티 코드에서 콘텐츠 뷰를 방금 만든 레이아웃으로 설정. 또한 액티비티가 생성돠면 가본 프래그먼트를 표시하는 것이 좋음.
+
+                class CardFlipActivity : FragmentActivity() {
+
+                    override fun onCreate(savedInstanceState: Bundle?) {
+                        super.onCreate(savedInstanceState)
+                        setContentView(R.layout.activity_activity_card_flip)
+                        if (savedInstanceState == null) {
+                            supportFragmentManager.beginTransaction()
+                                    .add(R.id.container, CardFrontFragment())
+                                    .commit()
+                        }
+                    }
+                    ...
+                }
+
+                카드 앞면이 표시되었으므로 적절한 시간에 플립 애니메이션으로 카드 뒷면을 표시할 수 있음. 카드의 다른 면을 보여주는 메서드를 만듦.
+                -프래그먼트 전환을 위해 이전에 만든 맞춤 애니메이션을 설정
+                -현재 표시된 프래그먼트를 새 프래그먼트로 바꾸고 이 이벤트를 이전에 만든 마줌 애니메이션으로 애니메이션함.
+                -이전에 표시된 프래그먼트를 프래그먼트 백 스택에 추가함. 그러면 사용자가 뒤로 버튼을 누르면 카드가 다시 뒤집힘.
+
+                class CardFlipActivity : FragmentActivity() {
+                    ...
+
+                    private fun flipCard() {
+                        if (showingBack) {
+                            supportFragmentManager.popBackStack()
+                            return
+                        }
+
+                        // Flip to the back.
+
+                        showingBack = true
+
+                        // Create and commit a new fragment transaction that adds the fragment for
+                        // the back of the card, uses custom animations, and is part of the fragment
+                        // manager's back stack.
+
+                        supportFragmentManager.beginTransaction()
+
+                                // Replace the default fragment animations with animator resources
+                                // representing rotations when switching to the back of the card, as
+                                // well as animator resources representing rotations when flipping
+                                // back to the front (e.g. when the system Back button is pressed).
+                                .setCustomAnimations(
+                                        R.animator.card_flip_right_in,
+                                        R.animator.card_flip_right_out,
+                                        R.animator.card_flip_left_in,
+                                        R.animator.card_flip_left_out
+                                )
+
+                                // Replace any fragments currently in the container view with a
+                                // fragment representing the next page (indicated by the
+                                // just-incremented currentPage variable).
+                                .replace(R.id.container, CardBackFragment())
+
+                                // Add this transaction to the back stack, allowing users to press
+                                // Back to get to the front of the card.
+                                .addToBackStack(null)
+
+                                // Commit the transaction.
+                                .commit()
+                    }
+                }
      */
     /*물리학 기반 모션
     자연스러움을 위해 애니메이션에 실제 물리학을 적용해야 함.
