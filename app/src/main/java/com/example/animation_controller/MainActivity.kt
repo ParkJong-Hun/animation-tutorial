@@ -590,6 +590,218 @@ class MainActivity : AppCompatActivity() {
                                 .commit()
                     }
                 }
+
+
+        -확대/축소 애니메이션으로 뷰 확대
+        뷰를 미리보기 이미지에서 화면을 가둑 채우는 크기 이미지로 애니멩션하는 사진 갤러리 같은 앱에 유용.
+
+            -뷰 만들기
+            확대/축소하려는 콘텐츠의 큰 버전과 작은 버전이 포함된 레이아웃 파일을 만듦.
+
+            <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                android:id="@+id/container"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent">
+
+                <LinearLayout android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <ImageButton
+                        android:id="@+id/thumb_button_1"
+                        android:layout_width="100dp"
+                        android:layout_height="75dp"
+                        android:layout_marginRight="1dp"
+                        android:src="@drawable/thumb1"
+                        android:scaleType="centerCrop"
+                        android:contentDescription="@string/description_image_1" />
+
+                </LinearLayout>
+
+                <!-- This initially-hidden ImageView will hold the expanded/zoomed version of
+                     the images above. Without transformations applied, it takes up the entire
+                     screen. To achieve the "zoom" animation, this view's bounds are animated
+                     from the bounds of the thumbnail button above, to its final laid-out
+                     bounds.
+                     -->
+
+                <ImageView
+                    android:id="@+id/expanded_image"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:visibility="invisible"
+                    android:contentDescription="@string/description_zoom_touch_close" />
+
+            </FrameLayout>
+
+            -확대/축소 애니메이션 설정
+            레이아웃을 적용했으면 확대/축소 애니메이션을 트리거하는 이벤트 핸들러를 설정.
+
+            class ZoomActivity : FragmentActivity() {
+
+                // Hold a reference to the current animator,
+                // so that it can be canceled mid-way.
+                private var currentAnimator: Animator? = null
+
+                // The system "short" animation time duration, in milliseconds. This
+                // duration is ideal for subtle animations or animations that occur
+                // very frequently.
+                private var shortAnimationDuration: Int = 0
+
+                override fun onCreate(savedInstanceState: Bundle?) {
+                    super.onCreate(savedInstanceState)
+                    setContentView(R.layout.activity_zoom)
+
+                    // Hook up clicks on the thumbnail views.
+
+                    val thumb1View: View = findViewById(R.id.thumb_button_1)
+                    thumb1View.setOnClickListener({
+                        zoomImageFromThumb(thumb1View, R.drawable.image1)
+                    })
+
+                    // Retrieve and cache the system's default "short" animation time.
+                    shortAnimationDuration = resources.getInteger(android.R.integer.config_shortAnimTime)
+                }
+                ...
+            }
+
+            -뷰 확대/축소
+            필요에 따라 일반 크기의 뷰에서 확대/축소된 뷰로 애니메이션. 대개 일반 크기의 뷰 경계에서 확대된 크기의 뷰 경계로 애니메이션해야 함.
+            1. 고해상도 이미지를 숨겨진 확대된 ImageView에 할당. 편의를 위해 UI 스레드에 큰 이미지 리소스를 로드. UI 스레드에서는 차단을
+            방지하기 위해 이 로드를 별도의 스레드에서 수행한 다음, UI 스레드에 비트맵을 설정할 수 있음. 비트멥이 화면 크기보다 크지 않은 것이 이상적.
+            2. ImageView의 시작 경계와 끝 경계를 계산
+            3. 시작 경계에서 끝 경계까지 4개의 각 위치 지정 및 크기 조정 속성 X, Y, SCALE_X, SCALE_Y를 동시에 애니메이션함. 이러한
+            4개의 애니메이션은 동시에 시작될 수 있도록 AnimatorSet에 추가됨.
+            4. 이미지가 확대된 상태에서 사용자가 화면을 터치하는 경우 유사한 애니메이션을 반대로 실행해 다시 축소.
+            ImageView에 View.OnClickListener를 추가해 이 작업을 수행할 수 있도록 함. ImageView는 클릭시 미리보기 이미지 크기로 다시 축소하고
+            공개된 상태를 GONE으로 설정해 숨김.
+
+            private fun zoomImageFromThumb(thumbView: View, imageResId: Int) {
+                // If there's an animation in progress, cancel it
+                // immediately and proceed with this one.
+                currentAnimator?.cancel()
+
+                // Load the high-resolution "zoomed-in" image.
+                val expandedImageView: ImageView = findViewById(R.id.expanded_image)
+                expandedImageView.setImageResource(imageResId)
+
+                // Calculate the starting and ending bounds for the zoomed-in image.
+                // This step involves lots of math. Yay, math.
+                val startBoundsInt = Rect()
+                val finalBoundsInt = Rect()
+                val globalOffset = Point()
+
+                // The start bounds are the global visible rectangle of the thumbnail,
+                // and the final bounds are the global visible rectangle of the container
+                // view. Also set the container view's offset as the origin for the
+                // bounds, since that's the origin for the positioning animation
+                // properties (X, Y).
+                thumbView.getGlobalVisibleRect(startBoundsInt)
+                findViewById<View>(R.id.container)
+                        .getGlobalVisibleRect(finalBoundsInt, globalOffset)
+                startBoundsInt.offset(-globalOffset.x, -globalOffset.y)
+                finalBoundsInt.offset(-globalOffset.x, -globalOffset.y)
+
+                val startBounds = RectF(startBoundsInt)
+                val finalBounds = RectF(finalBoundsInt)
+
+                // Adjust the start bounds to be the same aspect ratio as the final
+                // bounds using the "center crop" technique. This prevents undesirable
+                // stretching during the animation. Also calculate the start scaling
+                // factor (the end scaling factor is always 1.0).
+                val startScale: Float
+                if ((finalBounds.width() / finalBounds.height() > startBounds.width() / startBounds.height())) {
+                    // Extend start bounds horizontally
+                    startScale = startBounds.height() / finalBounds.height()
+                    val startWidth: Float = startScale * finalBounds.width()
+                    val deltaWidth: Float = (startWidth - startBounds.width()) / 2
+                    startBounds.left -= deltaWidth.toInt()
+                    startBounds.right += deltaWidth.toInt()
+                } else {
+                    // Extend start bounds vertically
+                    startScale = startBounds.width() / finalBounds.width()
+                    val startHeight: Float = startScale * finalBounds.height()
+                    val deltaHeight: Float = (startHeight - startBounds.height()) / 2f
+                    startBounds.top -= deltaHeight.toInt()
+                    startBounds.bottom += deltaHeight.toInt()
+                }
+
+                // Hide the thumbnail and show the zoomed-in view. When the animation
+                // begins, it will position the zoomed-in view in the place of the
+                // thumbnail.
+                thumbView.alpha = 0f
+                expandedImageView.visibility = View.VISIBLE
+
+                // Set the pivot point for SCALE_X and SCALE_Y transformations
+                // to the top-left corner of the zoomed-in view (the default
+                // is the center of the view).
+                expandedImageView.pivotX = 0f
+                expandedImageView.pivotY = 0f
+
+                // Construct and run the parallel animation of the four translation and
+                // scale properties (X, Y, SCALE_X, and SCALE_Y).
+                currentAnimator = AnimatorSet().apply {
+                    play(ObjectAnimator.ofFloat(
+                            expandedImageView,
+                            View.X,
+                            startBounds.left,
+                            finalBounds.left)
+                    ).apply {
+                        with(ObjectAnimator.ofFloat(expandedImageView, View.Y, startBounds.top, finalBounds.top))
+                        with(ObjectAnimator.ofFloat(expandedImageView, View.SCALE_X, startScale, 1f))
+                        with(ObjectAnimator.ofFloat(expandedImageView, View.SCALE_Y, startScale, 1f))
+                    }
+                    duration = shortAnimationDuration.toLong()
+                    interpolator = DecelerateInterpolator()
+                    addListener(object : AnimatorListenerAdapter() {
+
+                        override fun onAnimationEnd(animation: Animator) {
+                            currentAnimator = null
+                        }
+
+                        override fun onAnimationCancel(animation: Animator) {
+                            currentAnimator = null
+                        }
+                    })
+                    start()
+                }
+
+                // Upon clicking the zoomed-in image, it should zoom back down
+                // to the original bounds and show the thumbnail instead of
+                // the expanded image.
+                expandedImageView.setOnClickListener {
+                    currentAnimator?.cancel()
+
+                    // Animate the four positioning/sizing properties in parallel,
+                    // back to their original values.
+                    currentAnimator = AnimatorSet().apply {
+                        play(ObjectAnimator.ofFloat(expandedImageView, View.X, startBounds.left)).apply {
+                            with(ObjectAnimator.ofFloat(expandedImageView, View.Y, startBounds.top))
+                            with(ObjectAnimator.ofFloat(expandedImageView, View.SCALE_X, startScale))
+                            with(ObjectAnimator.ofFloat(expandedImageView, View.SCALE_Y, startScale))
+                        }
+                        duration = shortAnimationDuration.toLong()
+                        interpolator = DecelerateInterpolator()
+                        addListener(object : AnimatorListenerAdapter() {
+
+                            override fun onAnimationEnd(animation: Animator) {
+                                thumbView.alpha = 1f
+                                expandedImageView.visibility = View.GONE
+                                currentAnimator = null
+                            }
+
+                            override fun onAnimationCancel(animation: Animator) {
+                                thumbView.alpha = 1f
+                                expandedImageView.visibility = View.GONE
+                                currentAnimator = null
+                            }
+                        })
+                        start()
+                    }
+                }
+            }
+
      */
     /*물리학 기반 모션
     자연스러움을 위해 애니메이션에 실제 물리학을 적용해야 함.
