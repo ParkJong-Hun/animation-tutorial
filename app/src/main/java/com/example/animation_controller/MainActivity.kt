@@ -811,13 +811,223 @@ class MainActivity : AppCompatActivity() {
     자연스러움을 위해 애니메이션에 실제 물리학을 적용해야 함.
     이러한 동작을 제공하기 위해 "Android Support 라이브러리"에 물리학 법칙에 따라 애니메이션의 동작을 제어하는,
     물리학 기반 애니메이션 API가 있음.
-    일반적인 물리학 기반 애니메이션
-        -스프링 애니메이션
-        -플링 애니메이션
     물리학을 기반으로 하지 않는 애니메이션은 상당히 정적이고 재생시간이 고정되어 있음.
     타겟이 변경되면 변경 시 애니메이션을 취소하고 새 값을 새 시작 값으로 설정해 애니메이션을 재구성한 다음 타겟 값을 추가해야 함.
     반면 DynamicAnimation 같은 물리학 기반 애니메이션 API로 제작된 애니메이션은 물리력으로 구동.
-     */
+    일반적인 물리학 기반 애니메이션*/
+        /*
+        -스프링 애니메이션
+        물리학 기반 모션은 강제로 구동됨. 스프링력은 상호작용과 모션을 안내하는 힘. 스프링력에는 감쇠 및 강성 같은 속성이 있음.
+        스프링 기반 애니메이션에서 값과 속도는 각 프레임에 적용되는 스프링력에 따라 계산됨.
+        앱의 애니메이션이 한 방향으로만 느려지게 하려면 마찰 기반 플링 애니메이션을 대신 사용해야 함.
+            -스프링 애니메이션 수명주기
+            SpringForce 클래스를 사용하면 스프링의 강성, 감쇠 비율 및 최종 위치를 맞춤 설정할 수 있음.
+            애니메이션이 시작도면 바로 스프링에서 각 프레임의 애니메이션 값과 속도를 강제로 업데이트함.
+            애니메이션은 스프링력이 평형 상태가 될 때까지 계속됨.
+
+            -스프링 애니메이션 빌드
+            애플리케이션의 스프링 애니메이션을 빌드하는 일반적인 단계는 다음과 같음.
+            1. support 라이브러리 추가: 스프링 애니메이션 클래스를 사용하려면 프로젝트에 라이브러리를 추가해야 함.
+                1. 앱 모듈의 build.gradle 파일을 열음.
+                2. 라이브러리를 dependencies 섹션에 추가.
+                      dependencies {
+                          def dynamicanimation_version = "1.0.0"
+                          implementation 'androidx.dynamicanimation:dynamicanimation:$dynamicanimation_version'
+                      }
+
+            2. 스프링 애니메이션 만들기: 기본 단계에서는 SpringAnimation 클래스의 인스턴스를 생성하고 모션 동작 매개변수를 설정함.
+            SpringAnimation 클래스를 사용하면 객체의 스프링 애니메이션을 만들 수 있음. 스프링 애니메이션을 빌드하려면 SpringAnimation 클래스의
+            인스턴스를 만들고, 객체, 애니메이션화할 객체의 속성, 애니메이션이 정지할 선택적 최종 스프링 위치를 제공해야 함.
+            val springAnim = findViewById<View>(R.id.imageView).let { img ->
+                // Setting up a spring animation to animate the view’s translationY property with the final
+                // spring position at 0.
+                SpringAnimation(img, DynamicAnimation.TRANSLATION_Y, 0f)
+            }
+            스프링 기반 애니메이션은 보기 객체의 실제 속성을 변경하여 화면에서 보기를 애니메이션화할 수 있음. 시스템에서 사용할 수 있는 보기는 다음과 같음.
+            ALPHA: 보기의 알파 투명도를 나타냄. 값은 기본적으로 1(불투명)이며 값 0은 완전 투명(표시되지 않음)을 나타냄.
+            TRANSLATION_X, TRANSLATION_Y, TRANSLATION_Z: 이 속성은 레이아웃 컨테이너에서 설정한 왼쪽 좌표, 위쪽 좌표 및 높이로부터의
+            델타 값으로 보기의 위치를 제어함.
+                TRANSLATION_X는 왼쪽 좌표를 나타냄.
+                TRANSLATION_Y는 위쪽 좌표를 나타냄.
+                TRANSLATION_Z은 높이를 기준으로 보기의 깊이를 나타냄.
+            ROTATION, ROTATION_X, ROTATION_Y: 이 속성은 중심점을 기준으로 3D, 2D에서 회전을 제어함.
+            SCROLL_X, SCROLL_Y: 이 속성은 소스 왼쪽 및 위쪽 가장자리의 스크롤 오프셋을 나타냄. 페이지가 얼마나 스크롤되는지의 측면에서 위치도 표시.
+            SCALE_X, SCALE_Y: 이 속성은 중심점을 기준으로 보기의 2D 크기 조정을 제어함.
+            X, Y, Z: 컨테이너에서 보기의 최종 위치를 나타내는 기본 유틸리티 속성.
+                X는 왼쪽 값과 TRANSLATION_X의 합계
+                Y는 왼쪽 값과 TRANSLATION_Y의 합계
+                Z는 왼쪽 값과 TRANSLATION_Z의 합계
+
+            3. (선택사항)리스너 등록: 리스널르 등록해 애니메이션 수명주기 변경 및 애니메이션 값 업데이트를 관찰.
+            DynamicAnimation 클래스에서는 두 개의 리스너, OnAnimationUpdateListener 및 OnAnimationEndListener을(를) 제공함.
+            이러한 리스너는 애니메이션 값이 변경되고 애니메이션이 끝날 때 애니메이션의 업데이트를 수신 대기함.
+            (업데이트 리스너는 애니메이션 값 변경 시 프레임당 업데이트가 필요할 떼만 등록. 업데이트 리스너에서는 애니메이션이 별도의 스레드에서 실행되지 않도록 함.)
+
+                -OnAnimationUpdateListener
+                여러 보기를 애니메이션화하여 체인된 애니메이션을 만들려면 현재 보기의 속성이 변경될 때마다 콜백을 받도록 OnAnimationUpdateListener을(를) 설정할 수 있음.
+                콜백은 현재 보기의 속성에서 발생하는 변경사항을 기반으로 스프링 위치를 업데이트하도록 다른 보기에 알림. 리스너를 등록하려면 다음 단계를 실행함.
+
+                    1. addUpdateListener() 메서드를 호출하고 리스너를 애니매이션에 연결함.
+                    (애니메이션을 시작하기 전에 업데이트 리스너를 등록해야 함. 그러나 애니메이션 값이 변경될 때 프레임별 업데이트가 필요한 경우에만 업데이트 리스너를 등록해야 함.
+                    업데이트 리스너에서는 애니메이션이 별도의 스레드에서 실행되지 않도록 함.)
+                    2. 호출자에게 현재 객체의 변경에 관해 알리도록 onAnimationUpdate() 메서드를 재정의함. 다음 샘플 코드에서는 OnAnimationUpdateListener의 전반적인 사용을 보여줌.
+                    // Setting up a spring animation to animate the view1 and view2 translationX and translationY properties
+                    val (anim1X, anim1Y) = findViewById<View>(R.id.view1).let { view1 ->
+                        SpringAnimation(view1, DynamicAnimation.TRANSLATION_X) to
+                                SpringAnimation(view1, DynamicAnimation.TRANSLATION_Y)
+                    }
+                    val (anim2X, anim2Y) = findViewById<View>(R.id.view2).let { view2 ->
+                        SpringAnimation(view2, DynamicAnimation.TRANSLATION_X) to
+                                SpringAnimation(view2, DynamicAnimation.TRANSLATION_Y)
+                    }
+
+                    // Registering the update listener
+                    anim1X.addUpdateListener { _, value, _ ->
+                        // Overriding the method to notify view2 about the change in the view1’s property.
+                        anim2X.animateToFinalPosition(value)
+                    }
+
+                    anim1Y.addUpdateListener { _, value, _ -> anim2Y.animateToFinalPosition(value) }
+
+                -OnAnimationEndListener
+                OnAnimationEndListener에서는 애니메이션의 끝을 알림. 애니메이션이 평형 상태가 되거나 취소될 때마다 콜백을 수신하도록 리스너를 설정할 수 있음.
+                리스너를 등록하려면 다음 단계를 수행함.
+                    1.addEndListener() 메서드를 호출하고 리스너를 애니메이션에 연결함.
+                    2.애니메이션이 평형 상태가 되거나 취소될 때마다 알림을 받도록 onAnimationEnd() 메서드를 재정의함.
+
+            4. (선택사항)리스너 삭제: 더 이상 사용되지 않는 리스너를 삭제.
+            애니메이션 업데이트 콜백 및 애니메이션 종료 콜백 수신을 중지하려면 각각 removeUpdateListener() 및 removeEndListener() 메서드를 호출함.
+
+            5. (선택사항)시작 값 설정: 애니메이션 시작 값을 맞춤설정함.
+            애니메이션의 시작 값을 설정하려면 setStartValue() 메서드를 호출하고 애니메이션의 시작 값을 전달함.
+            시작 값을 설정하지 않으면 애니메이션에서 객체의 현재 속성 값을 시작 값으로 사용함.
+
+            6. (선택사항)값 범위 설정: 촤소 및 최대 범위 내로 값을 제한하도록 애니메이션 값 범위를 설정.
+            속성 값을 특정 범위로 제한하려면 최소 및 최대 애니메이션 값을 설정할 수 있음.
+            또한 알파(0 ~ 1)와 같은 고유 범위가 있는 속성을 애니메이션할 때도 범위를 제어하는 데 도움이 됨.
+            최소값을 설정하려면 setMinValue() 메서드를 호출하고 속성의 최소값을 전달함.
+            최대값을 설정하려면 setMaxValue() 메서드를 호출하고 속성의 최대값을 전달함.
+            두 메서드 모두 값이 설정된 애니메이션을 반환합니다.(시작 값을 설정하고 애니메이션 값 범위를 정의한 경우 시작 값이 최소값 및 최대값 범위에 있는지 확인함.)
+
+            7. (선택사항)시작 속도 설정: 애니메이션의 시작 속도를 설정.
+            시작 속도를 통해 애니메이션 시작 시 애니메이션 속성이 변경되는 속도를 정의함.
+            기본 시작 속도는 초당 픽셀로 설정됨. 터치 동작 속도를 사용하거나 고정 값을 시작 속도로 사용하여 속도를 설정할 수 있음.
+            고정 값을 제공하도록 선택하면 초당 dp 값을 정의한 다음 초당 픽셀로 변환하는 것이 좋음. 초당 dp로 값을 정의하면 속도가 밀도 및 폼 팩터에 독립적일 수 있음.
+            값을 초당 픽셀로 변환하는 방법에 관한 자세한 내용은 초당 dp를 초당 픽셀로 변환 섹션을 참조.
+            속도를 설정하려면 setStartVelocity() 메서드를 호출하고 속도를 초당 픽셀 단위로 전달함. 이 메서드는 속도가 설정된 스프링력 객체를 반환함.
+            (GestureDetector.OnGestureListener 또는 VelocityTracker 클래스 메서드를 사용하여 터치 동작의 속도를 검색하고 계산)
+            findViewById<View>(R.id.imageView).also { img ->
+                SpringAnimation(img, DynamicAnimation.TRANSLATION_Y).apply {
+                    …
+                    // Compute velocity in the unit pixel/second
+                    vt.computeCurrentVelocity(1000)
+                    val velocity = vt.yVelocity
+                    setStartVelocity(velocity)
+                }
+            }
+                -초당 dp를 초당 픽셀로 변환
+                스프링의 속도는 초당 픽셀 단위여야 함. 고정 값을 속도의 시작으로 제공하도록 선택하면 초당 dp 값을 제공한 다음 초당 픽셀로 변환함.
+                변환하려면 TypedValue 클래스의 applyDimension() 메서드를 사용함.
+                val pixelPerSecond: Float = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dpPerSecond, resources.displayMetrics)
+
+            8. (선택사항)스프링 속성 설정: 스프링의 감쇠비와 강성을 설정.
+            SpringForce 클래스에서는 감쇠비 및 강성과 같은 각 스프링 속성의 getter와 setter 메서드를 정의함.
+            스프링 속성을 설정하려면 스프링력 객체를 검색하거나 속성을 설정할 수 있는 맞춤 스프링력을 만드는 것이 중요함.
+            맞춤 스프링력을 만드는 데 관한 자세한 내용은 맞춤 스프링력 만들기 섹션을 참조.
+            (모든 setter 메서드에서 스프링력 객체를 반환하므로, setter 메서드를 사용하는 동안 메서드 체인을 만들 수 있습니다.)
+
+                -감쇠비
+                감쇠비는 스프링 진동이 점진적으로 감소하는 것을 나타냄.
+                감쇠비를 사용하여 한 탄성에서 다음 탄성으로 신속하게 진동이 감소되는 방식을 정의할 수 있음. 스프링을 감쇠시키는 방법은 다음 4가지가 있음.
+                    -감쇠비가 1보다 크면 과도 감쇠가 발생. 그러면 객체가 신속하게 정지 위치로 돌아감.
+                    -임계 감쇠는 감쇠비가 1일 때 발생. 그러면 최단 시간 내에 객체가 정지 위치로 돌아감.
+                    -부족 감쇠는 감쇠비가 1 미만일 때 발생. 그러면 객체가 여러 번 정지 위치를 지나친 다음 점진적으로 정지 위치에 도달함.
+                    -비감쇠는 감쇠비가 0일 때 발생. 그러면 객체가 영구적으로 진동할 수 있음.
+                스프링에 감쇠비를 추가하려면 다음 단계를 완료함.
+                    1. getSpring() 메서드를 호출하여 감쇠비를 추가할 스프링을 검색.
+                    2. setDampingRatio() 메서드를 호출하고 스프링에 추가할 감쇠비를 전달. 메서드는 감쇠비가 설정된 스프링력 객체를 반환.
+                (감쇠비는 음수가 아닌 숫자여야 함. 감쇠비를 0으로 설정하면 스프링이 정지 위치에 도달하지 않음. 즉, 영구적으로 진동.)
+                시스템에서 사용할 수 있는 감쇠비 상수는 다음과 같습니다.
+                    -DAMPING_RATIO_HIGH_BOUNCY
+                    -DAMPING_RATIO_MEDIUM_BOUNCY(기본)
+                    -DAMPING_RATIO_LOW_BOUNCY
+                    =DAMPING_RATIO_NO_BOUNCY
+
+                findViewById<View>(R.id.imageView).also { img ->
+                    SpringAnimation(img, DynamicAnimation.TRANSLATION_Y).apply {
+                        …
+                        //Setting the damping ratio to create a low bouncing effect.
+                        spring.dampingRatio = SpringForce.DAMPING_RATIO_LOW_BOUNCY
+                        …
+                    }
+                }
+                    -강성
+                    강성을 통해 스프링의 강도를 측정하는 스프링 상수를 정의. 강성 스프링은 스프링이 정지 위치에 있지 않을 때 연결된 객체에 더 큰 힘을 가함.
+                    스프링에 강성을 추가하려면 다음 단계를 완료.
+                        1. getSpring() 메서드를 호출하여 강성을 추가할 스프링을 검색합니다.
+                        2. setStiffness() 메서드를 호출하여 스프링에 추가할 강성 값을 전달합니다. 이 메소드는 강성이 설정된 스프링력 객체를 반환합니다.
+                        (강성은 양수여야 함.)
+                    시스템에서 사용할 수 있는 강성 상수는 다음과 같음.
+                        -STIFFNESS_HIGH
+                        -STIFFNESS_MEDIUM(기본)
+                        -STIFFNESS_LOW
+                        -STIFFNESS_VERY_LOW
+
+            9. (선택사항)맞춤 스프링 만들기: 기본 스프링을 사용하지 않거나 애니메이션 전체에서 공통 스프링을 사용하려면 맞춤 스프링을 만듦.
+            findViewById<View>(R.id.imageView).also { img ->
+                SpringAnimation(img, DynamicAnimation.TRANSLATION_Y).apply {
+                    …
+                    //Setting the spring with a low stiffness.
+                    spring.stiffness = SpringForce.STIFFNESS_LOW
+                    …
+                }
+            }
+            기본 스프링력을 사용하는 대신 맞춤 스프링력을 만들 수 있음.
+            맞춤 스프링력을 사용하면 여러 스프링 애니메이션에 동일한 스프링력 인스턴스를 공유할 수 있음.
+            스프링력을 만든 후 감쇠비 및 강성과 같은 속성을 설정할 수 있음.
+                1. SpringForce 객체를 만듦.
+                    SpringForce force = new SpringForce();
+                2. 각 메서드를 호출하여 속성을 할당. 메서드 체인도 만들 수 있음.
+                    force.setDampingRatio(DAMPING_RATIO_LOW_BOUNCY).setStiffness(STIFFNESS_LOW);
+                3. setSpring() 메서드를 호출하여 스프링을 애니메이션으로 설정.
+                    setSpring(force);
+
+            10.애니메이션 시작: 스프링 애니메이션을 시작.
+            스프링 애니메이션을 시작할 수 있는 방법은 start()을(를) 호출하거나 animateToFinalPosition() 메서드를 호출하는 식의 두 가지 방법이 있음.
+            두 메서드 모두 기본 스레드에서 호출해야 함.
+            animateToFinalPosition() 메소드를 통해 다음 두 가지 작업을 완료함.
+                -스프링의 최종 위치를 설정.
+                -애니메이션이 시작되지 않았으면 애니메이션을 시작.
+            이 메서드에서 스프링의 마지막 위치를 업데이트하고 필요한 경우 애니메이션을 시작하므로 언제든지 이 메서드를 호출하여 애니메이션 과정을 변경할 수 있음.
+            예를 들어 연쇄 스프링 애니메이션에서 한 보기의 애니메이션은 다른 보기에 따라 달라짐. 이러한 애니메이션에서는 animateToFinalPosition() 메서드를 사용하는 것이 더 편리.
+            연쇄 스프링 애니메이션에서 이 메서드를 사용하면 다음에 업데이트하려는 애니메이션이 현재 실행 중인지 신경 쓰지 않아도 됨.
+            animateToFinalPosition() 메서드를 사용하려면 animateToFinalPosition() 메서드를 호출하고 스프링의 정지 위치를 전달함.
+            setFinalPosition() 메서드를 호출해서도 스프링의 정지 위치를 설정할 수 있음.
+            start() 메서드에서는 속성 값을 즉시 시작 값으로 설정하지 않음. 속성 값은 각 애니메이션이 깜박일 때 변경되며 그리기 단계 이전에 발생.
+            따라서 값이 즉시 설정되는 것처럼 변경사항이 다음 프레임에 반영.
+
+            findViewById<View>(R.id.imageView).also { img ->
+                SpringAnimation(img, DynamicAnimation.TRANSLATION_Y).apply {
+                    …
+                    //Starting the animation
+                    start()
+                    …
+                }
+            }
+
+            11.(선택사항)애니메이션 취소: 사용자가 갑자기 앱을 종료하거나 보기가 보이지 않으면 애니메이션 취소.
+            애니메이션을 취소하거나 애니메이션의 끝으로 건너뛸 수 있음. 애니메이션을 취소하거나 애니메이션의 끝으로 건너뛰어야 하는 경우는 사용자 상호작용에 따라 애니메이션을 즉시 종료해야 하는 경우.
+            주로 사용자가 앱을 갑자기 종료하거나 보기가 표시되지 않는 경우.
+            애니메이션을 종료하는 데 사용할 수 있는 메서드는 두 가지가 있음.
+                -cancel() 메서드에서는 값이 있는 위치에서 애니메이션을 종료.
+                -skipToEnd() 메서드에서는 애니메이션을 최종 값까지 건너뛴 다음 종료.
+            애니메이션을 종료하려면 먼저 스프링의 상태를 확인해야 함. 상태가 감쇠되지 않으면 애니메이션은 정지 위치에 도달할 수 없음. 스프링의 상태를 확인하려면 canSkipToEnd() 메서드를 호출.
+            스프링이 감쇠되면 메서드에서 true를 반환하고, 감쇠되지 않으면 false를 반환. 스프링의 상태를 알면 skipToEnd() 메서드 또는 cancel() 메서드를 사용하여 애니메이션을 종료할 수 있음.
+            cancel() 메서드는 기본 스레드에서만 호출해야 함.
+        */
+        /*
+        -플링 애니메이션
+        */
     /*레이아웃 변경 애니메이션
     Android4.4(API 19) 이상에서는 현재 액티비티 또는 프래그먼트 내에서 레이아웃을 변경할 때 전환 프레임워크를 사용해 애니메이션을 만들 수 있음.
     시작 및 종료 레이아웃과 사용하려는 애니메이션을 파악해 실행함. 전체 UI를 교체하거나 일부 뷰만 이동/교체 할 수도 있움.
