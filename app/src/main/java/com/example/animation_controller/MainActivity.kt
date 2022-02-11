@@ -1101,7 +1101,8 @@ class MainActivity : AppCompatActivity() {
         1. 시작 레이아웃과 종료 레이아웃 둘 다의 Scene 객체를 만듦. 그러나 시작 레이아웃의 장면은 종종 현재 레이아웃을 기반으로 자동으로 결정.
         2. Transition 객체를 만들어 원하는 애니메이션 유형을 정의.
         3. TransitionManager.go()를 호출하면 시스템에서 애니메이션을 실행해 레이아웃을 전환.
-
+     */
+        /*
         -Scene 만들기
         모든 보기와 속성 값을 비롯해 보기 계층 구조의 상태를 저장. 전환 프레임워크를 통해 시작 장면과 종료 장면 사이에 애니메이션을 실행할 수 있음.
         레이아웃 리소스 파일 또는 코드의 보기 그룹에서 장면을 만들 수 있음. 그러나 전환할 시작 장면은 종종 현재 UI를 기반으로 자동으로 결정.
@@ -1189,8 +1190,114 @@ class MainActivity : AppCompatActivity() {
             맞춤 장면 작업을 제공하려면 작업을 Runnable 객체로 정의하여 Scene.setExitAction() 또는 Scene.setEnterAction() 함수에 전달.
             프레임워크에서는 전환 애니메이션을 실행하기 전에 시작 장면에서 setExitAction() 함수를 호출하고 전환 애니메이션 실행 후 종료 장면에서 setEnterAction() 함수를 호출.
             (시작 장면과 종료 장면 사이에 데이터를 전달하는 데 장면 작업을 사용하면 안됨. 자세한 내용은 전환 수명 주기 콜백 정의를 참조.)
+        */
+        /*전환 적용
+        Transition 프레임워크에서는 Transition 객체를 사용하여 장면 사이의 애니메이션 스타일을 나타냄. 내장된 여러 서브 클래스를 사용해 Transition을 인스턴스화하거나
+        자체 전환을 정의할 수 있음. 그런 다음 종료 Scene 및 Transition을 TransitionManager.go()에 전달하여 장면 사이에 애니메이션을 실행할 수 있음.
+        전환 수명 주기는 활동 수명 주기와 비슷하며, 프레임워크에서 애니메이션 시작과 완료 사이를 모니터링하는 전환 상태를 나타냄.
+        중요한 수명 주기 상태에서, 프레임워크는 여러 다른 전환 단계의 사용자 인터페이스를 조정하기 위해 구현할 수 있는 콜백 함수를 호출.
 
-     */
+            -전환 만들기
+            변경하려는 시작 장면과 종료 장면을 정의했다면 애니메이션을 정의하는 Transition 객체를 만들어야 함.
+            프레임워크를 사용하면 리소스 파일에서 내장형 전환을 지정하고 개발자 코드에서 확장하거나 개발자 코드에서 직접 내장형 전환의 인스턴스를 만들 수 있음.
+
+                -리소스 파일에서 전환 인스턴스 만들기
+                이 기법을 사용하면 활동의 코드를 변경하지 않아도 전환 정의를 수정할 수 있음.
+                이 기법은 여러 전환 지정에 표시된 대로 애플리케이션 코드에서 복합 전환 정의를 구분하는 데도 유용.
+                    1. 프로젝트에 res/transition/ 디렉터리를 추가.
+                    2. 이 디렉터리에 새로운 XML 리소스 파일을 만듦.
+                    3. 내장형 전환 중 하나의 XML 노드를 추가.
+
+                res/transition/fade_transition.xml
+                <fade xmlns:android="http://schemas.android.com/apk/res/android" />
+
+                var fadeTransition: Transition =
+                TransitionInflater.from(this)
+                                  .inflateTransition(R.transition.fade_transition)
+
+                -개발자의 코드에서 전환 인스턴스 만들기
+                이 기법은 개발자 코드의 사용자 인터페이스를 수정할 때 동적으로 전환 객체를 만드는 데 또는 매개변수가 적거나 없는 간단한 내장형 전환 인스턴스를 만드는 데 유용.
+                내장된 전환 인스턴스를 만들려면 Transition 클래스의 서브클래스에 있는 공개 생성자 중 하나를 호출. 예를 들어 다음 코드 스니펫은 Fade 전환 인스턴스를 만듦.
+
+                var fadeTransition: Transition = Fade()
+
+            -전환 적용
+            일반적으로 사용자 작업과 같은 이벤트에 응답하여 여러 개의 서로 다른 보기 계층 구조 간에 변경하기 위해 전환을 적용합니다. 예를 들어 다음과 같은 검색 앱을 고려.
+            사용자가 검색어를 입력하고 검색 버튼을 클릭하면, 검색 버튼을 페이드 아웃하고 검색 결과를 페이드 인하는 전환을 적용하는 동안 앱이 결과 레이아웃을 나타내는 장면으로 변경.
+            활동의 이벤트에 응답하여 전환을 적용하는 동안 장면을 변경하려면 다음 스니펫과 같이 애니메이션에 사용할 종료 장면과 전환 인스턴스와 함께 TransitionManager.go() 클래스 함수를 호출.
+
+            TransitionManager.go(endingScene, fadeTransition)
+
+            전환 인스턴스에서 지정한 애니메이션을 실행하는 동안 프레임워크에서 종료 장면의 보기 계층 구조로 장면 루트에 있는 보기 계층 구조를 변경.
+            시작 장면은 마지막 전환의 종료 장면. 이전 전환이 없으면 사용자 인터페이스의 현재 상태에서 자동으로 시작 장면이 결정.
+
+            -특정 타겟 보기 선택
+            프레임워크에서는 기본적으로 시작 장면과 종료 장면에 있는 모든 보기에 전환을 적용. 경우에 따라 장면에 있는 보기의 하위 세트에만 애니메이션을 적용할 수 있음.
+            프레임워크를 사용하면 애니메이션으로 보여줄 특정 보기를 선택할 수 있음.전환 중에 애니메이션으로 보여주는 각 보기는 타겟이라고 함. 장면과 연결된 뷰 계층 구조의 일부인 타겟만 선택할 수 있음.
+            타겟 목록에서 뷰를 하나 이상 삭제하려면 전환을 시작하기 전에 removeTarget() 메서드를 호출. 개발자가 지정하는 뷰만 타겟 목록에 추가하려면 addTarget() 함수를 호출.
+
+            -여러 전환 지정
+            애니메이션의 효과를 극대화하려면 장면 사이에 발생하는 변경 유형과 애니메이션을 일치시켜야 함.
+            전환 프레임워크를 사용하면 개별 내장형 전환 또는 맞춤 전환 그룹을 포함하는 전환 세트에 애니메이션 효과를 결합할 수 있으므로 여러 개의 애니메이션을 선택해도 됨.
+            XML의 전환 컬렉션에서 전환 세트를 정의하려면 res/transitions/ 디렉터리에 리소스 파일을 만들고 transitionSet 요소 아래에 전환을 나열.
+
+            <transitionSet xmlns:android="http://schemas.android.com/apk/res/android"
+                android:transitionOrdering="sequential">
+                <fade android:fadingMode="fade_out" />
+                <changeBounds />
+                <fade android:fadingMode="fade_in" />
+            </transitionSet>
+
+            전환 세트를 코드의 TransitionSet 객체로 확장하려면 활동에서 TransitionInflater.from() 함수를 호출.
+            TransitionSet 클래스는 Transition 클래스에서 확장되므로 다른 Transition 인스턴스와 마찬가지로 전환 관리자와 함께 사용할 수 있음.
+
+            -장면 없이 전환 적용
+            사용자 인터페이스를 수정하는 데는 보기 계층 구조를 변경하는 방법 외에도 다른 방법이 있음. 현재 계층 구조에서 하위 보기를 추가, 수정 및 제거하여 변경할 수도 있음.
+            검색 항목 필드와 검색 아이콘을 표시하는 레이아웃으로 시작. 결과를 표시하도록 사용자 인터페이스를 변경하려면 ViewGroup.removeView() 함수를 호출하여 사용자가
+            검색 버튼을 클릭할 때 검색 버튼을 삭제하고 ViewGroup.addView() 함수를 호출하여 검색 결과를 추가.
+            대안으로 거의 동일한 두 개의 계층 구조가 있으면 이 방법을 사용할 수 있음. 사용자 인터페이스의 사소한 차이 때문에 두 개의 개별 레이아웃 파일을 만들고 유지관리할 필요 없이,
+            개발자가 코드에서 수정하는 보기 계층 구조가 포함된 하나의 레이아웃 파일을 사용할 수 있음.
+            현재 보기 계층 구조에서 이 방식으로 변경하면 장면을 만들지 않아도 됨. 대신 지연된 전환을 사용하여 보기 계층 구조의 두 상태 간에 전환을 만들어 적용할 수 있음.
+            이 전환 프레임워크 기능은 현재 보기 계층 구조 상태부터 시작하여, 보기의 변경사항을 기록하고, 시스템이 사용자 인터페이스를 수정할 때 변경사항을 애니메이션으로 보여주는 전환을 적용.
+            단일 뷰 계층 구조에 지연된 전환을 만들려면 다음 단계를 따릅니다.
+                1. 전환을 트리거하는 이벤트가 발생하면 변경하려는 모든 뷰의 상위 뷰와 사용할 전환을 제공하는 TransitionManager.beginDelayedTransition() 함수를 호출.
+                프레임워크에서 하위 뷰의 현재 상태와 속성 값을 저장.
+                2. 사용 사례에 맞게 필요한 대로 하위 보기를 변경. 프레임워크에서는 하위 보기와 속성의 변경사항을 기록.
+                3. 시스템에서 변경사항에 따라 사용자 인터페이스를 수정하면 프레임워크에서 원래 상태와 새 상태 간 변경사항을 애니메이션으로 보여줌.
+
+            res/layout/activity_main.xml
+            <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                android:id="@+id/mainLayout"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" >
+                <EditText
+                    android:id="@+id/inputText"
+                    android:layout_alignParentLeft="true"
+                    android:layout_alignParentTop="true"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content" />
+                ...
+            </RelativeLayout>
+
+            MainActivity
+            setContentView(R.layout.activity_main)
+            val labelText = TextView(this).apply {
+                text = "Label"
+                id = R.id.text
+            }
+            val rootView: ViewGroup = findViewById(R.id.mainLayout)
+            val fade: Fade = Fade(Fade.IN)
+            TransitionManager.beginDelayedTransition(rootView, mFade)
+            rootView.addView(labelText)
+
+            -전환 수명 주기 콜백 정의
+            전환 수명 주기는 활동 수명 주기와 비슷. TransitionManager.go() 함수 호출과 애니메이션 완료 사이의 시간에 프레임워크에서 모니터링하는 전환 상태를 나타냄.
+            중요한 수명 주기 상태에서 프레임워크는 TransitionListener 인터페이스에서 정의한 콜백을 호출.
+
+
+
+
+         */
     /*액티비티 간 애니메이션
     Android5.0(API 21) 이상에서는 액티비티 간 전환되는 애나메이션을 만들 수도 있음.
      */
