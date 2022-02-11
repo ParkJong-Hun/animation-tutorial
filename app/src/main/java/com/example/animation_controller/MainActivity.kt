@@ -1086,7 +1086,110 @@ class MainActivity : AppCompatActivity() {
         */
     /*레이아웃 변경 애니메이션
     Android4.4(API 19) 이상에서는 현재 액티비티 또는 프래그먼트 내에서 레이아웃을 변경할 때 전환 프레임워크를 사용해 애니메이션을 만들 수 있음.
-    시작 및 종료 레이아웃과 사용하려는 애니메이션을 파악해 실행함. 전체 UI를 교체하거나 일부 뷰만 이동/교체 할 수도 있움.
+    시작 및 종료 레이아웃과 사용하려는 애니메이션을 파악해 실행함. 전체 UI를 교체하거나 일부 뷰만 이동/교체 할 수도 있음.
+    시작 장면은 대개 현재 레이아웃에서 자동으로 결정되지만 시작 및 종료 레이아웃은 Scene에 각각 저장됨. 원하는 애니메이션 유형을 시스템에 알리는
+    Transition을 만든 후 TransitionManager.go()를 호출. 그러면 시스템이 애니메이션을 실행해 레이아웃을 전환함.
+    Transition 프레임워크를 사용해 단순히 시작 레이아웃과 종료 레이아웃을 제공해 UI에서 모든 종류의 모션을 애니메이션으로 보여줄 수 있음.
+    개발자가 원하는 애니메이션 유형을 선택할 수 있으며, 프레임워크에서 시작 레이아웃까지 애니메이션으로 보여주는 방법을 알아냄.
+    Transition 프레임워크에는 다음 기능이 포함되어 있음.
+        -그룹 레벨 애니메이션: 보기 계층의 모든 보기에 하나 이상의 애니메이션 효과를 적용.
+        -내장형 애니메이션: 페이드 아웃 또는 이동과 같은 일반 효과용으로 미리 정의된 애니메이션을 사용함.
+        -리소스 파일 지원: 레이아웃 리소스 파일에서 계층 구조와 내장형 애니매이션을 로드함.
+        -수명 주기 콜백: 애니메이션과 계층 구조 변경 프로세스 제어 기능을 제공하는 콜백을 받음.
+        (동일한 활동 내에서 레이아웃 간 전환을 빌드하는 방법을 설명함. 사용자가 액티비티 사이를 이동하면 애니메이션을 사용해 액티비티 시작을 대신 참조)
+    레이아웃이 다른 레이아웃으로 전환될 때 이를 애니메이션으로 보여주는 기본 프로세스는 다음과 같음.
+        1. 시작 레이아웃과 종료 레이아웃 둘 다의 Scene 객체를 만듦. 그러나 시작 레이아웃의 장면은 종종 현재 레이아웃을 기반으로 자동으로 결정.
+        2. Transition 객체를 만들어 원하는 애니메이션 유형을 정의.
+        3. TransitionManager.go()를 호출하면 시스템에서 애니메이션을 실행해 레이아웃을 전환.
+
+        -Scene 만들기
+        모든 보기와 속성 값을 비롯해 보기 계층 구조의 상태를 저장. 전환 프레임워크를 통해 시작 장면과 종료 장면 사이에 애니메이션을 실행할 수 있음.
+        레이아웃 리소스 파일 또는 코드의 보기 그룹에서 장면을 만들 수 있음. 그러나 전환할 시작 장면은 종종 현재 UI를 기반으로 자동으로 결정.
+        장면을 변경할 때 실행하는 고유 작업도 정의할 수 있음.
+        (프레임워크에서는 장면 없이 전환 작용에 설명한 대로 장면을 사용하지 않고 단일 뷰 계층 구조의 변경사항을 애니메이션화할 수 있음. 그러나
+        전환과 작업을 하려면 장면을 이해해야 함.)
+            -레이아웃 리소스에서 장면 만들기
+            레이아웃 리소스 파일에서 직접 Scene 인스턴스를 만들 수 있음. 파일의 뷰 계층 구조가 주로 정적이면 이 기법을 사용.
+            결과 장면은 Scene 인스턴스를 만든 시점의 뷰 계층 구조 상태를 나타냄. 뷰 계층 구조를 변경하면 장면을 다시 만들어야 함.
+            프레임워크가 파일에 있는 전체 뷰 계층 구조에서 장면을 생성하므로, 레이아웃 파일의 일부 장면을 만들 수는 없음.
+            레이아웃 리소스 파일에서 Scene 인스턴스를 만들려면 레이아웃에서 장면 루트를 ViewGroup 인스턴스로 검색하고 장면 루트와 장면의 뷰
+            계층 구조가 포함된 레이아웃 파일의 리소스 ID로 Scene.getSceneForLayout) 함수를 호출.
+
+                -장면 레이아웃 정의
+                이 섹션의 나머지 부분에 있는 코드 스니펫에서는 장면 루트 요소가 같은 두 개의 서로 다른 장면을 만드는 방법을 보여줌.
+                관련 없는 여러 Scene 객체를 서로 관련되어 있다고 암시하지 않고 로드할 수 있다는 점도 보여줌.
+
+                res/layout/activity_main.xml
+                <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                    android:id="@+id/master_layout">
+                    <TextView
+                        android:id="@+id/title"
+                        ...
+                        android:text="Title"/>
+                    <FrameLayout
+                        android:id="@+id/scene_root">
+                        <include layout="@layout/a_scene" />
+                    </FrameLayout>
+                </LinearLayout>
+
+                이 레이아웃 정의에는 장면 루트의 하위 레이아웃과 텍스트 필드가 포함되어 있음. 첫 번째 장면의 레이아웃은 기본 레이아웃 파일에 포함되어 있음.
+                프레임워크는 전체 레이아웃 파일만 장면에 로드하라 수 있기 때문에, 앱을 초기 사용자 인터페이스의 일부로 표시하고 장면에 로드할 수 있음.
+
+                res/layout/a_scene.xml
+                <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                    android:id="@+id/scene_container"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent" >
+                    <TextView
+                        android:id="@+id/text_view1"
+                        android:text="Text Line 1" />
+                    <TextView
+                        android:id="@+id/text_view2"
+                        android:text="Text Line 2" />
+                </RelativeLayout>
+
+                res/layout/another_scene.xml
+                <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                    android:id="@+id/scene_container"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent" >
+                    <TextView
+                        android:id="@+id/text_view2"
+                        android:text="Text Line 2" />
+                    <TextView
+                        android:id="@+id/text_view1"
+                        android:text="Text Line 1" />
+                </RelativeLayout>
+
+                -레이아웃 장면 생성
+                두 상대 레이아웃의 정의를 만든 다음 각 정의의 장면을 얻을 수 있음. 그러므로 나중에 두 개의 UI 구성을 서로 전환할 수 있음.
+                장면을 얻으려면 레이아웃 리소스 ID와 장면 루트의 참조가 필요.
+
+                val sceneRoot: ViewGroup = findViewById(R.id.scene_root)
+                val aScene: Scene = Scene.getSceneForLayout(sceneRoot, R.layout.a_scene, this)
+                val anotherScene: Scene = Scene.getSceneForLayout(sceneRoot, R.layout.another_scene, this)
+
+                이제 앱에는 뷰 계층 구조에 기반한 두 개의 Scene 객체가 있음. 두 장면 모두 res/layout/activity_main.xml의 Frame
+                Layout 요소로 정의된 장면 루트를 사용.
+
+            -코드에 장면 만들기
+            ViewGroup 객체에서 코드에 Scene 인스턴스를 만들 수도 있음. 개발자의 코드에서 직접 뷰 계층 구조를 수정하거나 동적으로 생성할 때 이 기법을 사용.
+            코드의 뷰 계층 구조에서 장면을 만들려면 Scene(sceneRoot, viewHierarchy) 생성자를 사용. 이 생성자 호출은 레이아웃 파일을 이미 확장했을 때
+            Scene.getSceneForLayout() 함수를 호출하는 것과 동일.
+
+            val sceneRoot = someLayoutElement as ViewGroup
+            val viewHierarchy = someOtherLayoutElement as ViewGroup
+            val scene: Scene = Scene(sceneRoot, viewHierarchy)
+
+            -장면 작업을 만들기
+            프레임워크를 사용하면 장면을 시작하거나 종료할 때 시스템에서 실행하는 맞춤 장면 작업을 정의할 수 있음. 프레임워크에서 자동으로 장면 사이의 변경사항을
+            애니메이션으로 보여주므로, 대부분의 경우 맞춤 장면 작업을 정의할 필요가 없음. 장면 작업은 다음과 같은 케이스를 처리하는 데 유용.
+                -같은 계층 구조에 없는 보기를 애니메이션으로 보여줌. 장면 시작 및 종료 작업을 사용하여 장면을 시작하고 종료하는 보기를 애니메이션으로 보여줄 수 있음.
+                -ListView 객체와 같이 전환 프레임워크에서 자동으로 애니메이션화할 수 없는 뷰를 애니메이션화. 자세한 내용은 제한사항을 참조.
+            맞춤 장면 작업을 제공하려면 작업을 Runnable 객체로 정의하여 Scene.setExitAction() 또는 Scene.setEnterAction() 함수에 전달.
+            프레임워크에서는 전환 애니메이션을 실행하기 전에 시작 장면에서 setExitAction() 함수를 호출하고 전환 애니메이션 실행 후 종료 장면에서 setEnterAction() 함수를 호출.
+            (시작 장면과 종료 장면 사이에 데이터를 전달하는 데 장면 작업을 사용하면 안됨. 자세한 내용은 전환 수명 주기 콜백 정의를 참조.)
+
      */
     /*액티비티 간 애니메이션
     Android5.0(API 21) 이상에서는 액티비티 간 전환되는 애나메이션을 만들 수도 있음.
