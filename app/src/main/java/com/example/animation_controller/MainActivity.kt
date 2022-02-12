@@ -492,7 +492,7 @@ class MainActivity : AppCompatActivity() {
 
                 -프래그먼트 만들기
                 카드의 앞면과 뒷면을 위한 프래그먼트 클래스를 만듦. 이러한 클래스는 각 프래그먼트의 onCreateView() 메서드에서 이전에 만든 레이아웃을 반환.
-                그러면 카드를 표시하고자 하는 상위 활동에서 이 프래그먼트의 인스턴스를 만들 수 있음.
+                그러면 카드를 표시하고자 하는 상위 액티비티에서 이 프래그먼트의 인스턴스를 만들 수 있음.
 
                 class CardFlipActivity : FragmentActivity() {
                     ...
@@ -1096,7 +1096,7 @@ class MainActivity : AppCompatActivity() {
         -내장형 애니메이션: 페이드 아웃 또는 이동과 같은 일반 효과용으로 미리 정의된 애니메이션을 사용함.
         -리소스 파일 지원: 레이아웃 리소스 파일에서 계층 구조와 내장형 애니매이션을 로드함.
         -수명 주기 콜백: 애니메이션과 계층 구조 변경 프로세스 제어 기능을 제공하는 콜백을 받음.
-        (동일한 활동 내에서 레이아웃 간 전환을 빌드하는 방법을 설명함. 사용자가 액티비티 사이를 이동하면 애니메이션을 사용해 액티비티 시작을 대신 참조)
+        (동일한 액티비티 내에서 레이아웃 간 전환을 빌드하는 방법을 설명함. 사용자가 액티비티 사이를 이동하면 애니메이션을 사용해 액티비티 시작을 대신 참조)
     레이아웃이 다른 레이아웃으로 전환될 때 이를 애니메이션으로 보여주는 기본 프로세스는 다음과 같음.
         1. 시작 레이아웃과 종료 레이아웃 둘 다의 Scene 객체를 만듦. 그러나 시작 레이아웃의 장면은 종종 현재 레이아웃을 기반으로 자동으로 결정.
         2. Transition 객체를 만들어 원하는 애니메이션 유형을 정의.
@@ -1191,10 +1191,10 @@ class MainActivity : AppCompatActivity() {
             프레임워크에서는 전환 애니메이션을 실행하기 전에 시작 장면에서 setExitAction() 함수를 호출하고 전환 애니메이션 실행 후 종료 장면에서 setEnterAction() 함수를 호출.
             (시작 장면과 종료 장면 사이에 데이터를 전달하는 데 장면 작업을 사용하면 안됨. 자세한 내용은 전환 수명 주기 콜백 정의를 참조.)
         */
-        /*전환 적용
+        /*-Transition 적용
         Transition 프레임워크에서는 Transition 객체를 사용하여 장면 사이의 애니메이션 스타일을 나타냄. 내장된 여러 서브 클래스를 사용해 Transition을 인스턴스화하거나
         자체 전환을 정의할 수 있음. 그런 다음 종료 Scene 및 Transition을 TransitionManager.go()에 전달하여 장면 사이에 애니메이션을 실행할 수 있음.
-        전환 수명 주기는 활동 수명 주기와 비슷하며, 프레임워크에서 애니메이션 시작과 완료 사이를 모니터링하는 전환 상태를 나타냄.
+        전환 수명 주기는 액티비티 수명 주기와 비슷하며, 프레임워크에서 애니메이션 시작과 완료 사이를 모니터링하는 전환 상태를 나타냄.
         중요한 수명 주기 상태에서, 프레임워크는 여러 다른 전환 단계의 사용자 인터페이스를 조정하기 위해 구현할 수 있는 콜백 함수를 호출.
 
             -전환 만들기
@@ -1202,7 +1202,7 @@ class MainActivity : AppCompatActivity() {
             프레임워크를 사용하면 리소스 파일에서 내장형 전환을 지정하고 개발자 코드에서 확장하거나 개발자 코드에서 직접 내장형 전환의 인스턴스를 만들 수 있음.
 
                 -리소스 파일에서 전환 인스턴스 만들기
-                이 기법을 사용하면 활동의 코드를 변경하지 않아도 전환 정의를 수정할 수 있음.
+                이 기법을 사용하면 액티비티의 코드를 변경하지 않아도 전환 정의를 수정할 수 있음.
                 이 기법은 여러 전환 지정에 표시된 대로 애플리케이션 코드에서 복합 전환 정의를 구분하는 데도 유용.
                     1. 프로젝트에 res/transition/ 디렉터리를 추가.
                     2. 이 디렉터리에 새로운 XML 리소스 파일을 만듦.
@@ -1224,7 +1224,7 @@ class MainActivity : AppCompatActivity() {
             -전환 적용
             일반적으로 사용자 작업과 같은 이벤트에 응답하여 여러 개의 서로 다른 보기 계층 구조 간에 변경하기 위해 전환을 적용합니다. 예를 들어 다음과 같은 검색 앱을 고려.
             사용자가 검색어를 입력하고 검색 버튼을 클릭하면, 검색 버튼을 페이드 아웃하고 검색 결과를 페이드 인하는 전환을 적용하는 동안 앱이 결과 레이아웃을 나타내는 장면으로 변경.
-            활동의 이벤트에 응답하여 전환을 적용하는 동안 장면을 변경하려면 다음 스니펫과 같이 애니메이션에 사용할 종료 장면과 전환 인스턴스와 함께 TransitionManager.go() 클래스 함수를 호출.
+            액티비티의 이벤트에 응답하여 전환을 적용하는 동안 장면을 변경하려면 다음 스니펫과 같이 애니메이션에 사용할 종료 장면과 전환 인스턴스와 함께 TransitionManager.go() 클래스 함수를 호출.
 
             TransitionManager.go(endingScene, fadeTransition)
 
@@ -1248,7 +1248,7 @@ class MainActivity : AppCompatActivity() {
                 <fade android:fadingMode="fade_in" />
             </transitionSet>
 
-            전환 세트를 코드의 TransitionSet 객체로 확장하려면 활동에서 TransitionInflater.from() 함수를 호출.
+            전환 세트를 코드의 TransitionSet 객체로 확장하려면 액티비티에서 TransitionInflater.from() 함수를 호출.
             TransitionSet 클래스는 Transition 클래스에서 확장되므로 다른 Transition 인스턴스와 마찬가지로 전환 관리자와 함께 사용할 수 있음.
 
             -장면 없이 전환 적용
@@ -1291,7 +1291,7 @@ class MainActivity : AppCompatActivity() {
             rootView.addView(labelText)
 
             -전환 수명 주기 콜백 정의
-            전환 수명 주기는 활동 수명 주기와 비슷. TransitionManager.go() 함수 호출과 애니메이션 완료 사이의 시간에 프레임워크에서 모니터링하는 전환 상태를 나타냄.
+            전환 수명 주기는 액티비티 수명 주기와 비슷. TransitionManager.go() 함수 호출과 애니메이션 완료 사이의 시간에 프레임워크에서 모니터링하는 전환 상태를 나타냄.
             중요한 수명 주기 상태에서 프레임워크는 TransitionListener 인터페이스에서 정의한 콜백을 호출.
 
 
@@ -1300,4 +1300,127 @@ class MainActivity : AppCompatActivity() {
          */
     /*액티비티 간 애니메이션
     Android5.0(API 21) 이상에서는 액티비티 간 전환되는 애나메이션을 만들 수도 있음.
+    Transition 프레임워크를 기반으로 하지만, 이 프레임워크를 통해 별도의 액티비티로 레이아웃 간에 애니메이션을 만들 수 있음.
+    측면에서 새 액티비티를 슬라이드 인하거나 페이드인하는 등의 간단한 애니메이션을 적용할 수 있지만, 각 액티비티에 공유되는 뷰 간에 전환되는 애니메이션을 만들 수 있음.
+    평소와 같이 startActivity()를 호출하면 되지만, ActivityOptions.makeSceneTransitionAnimation()에서 제공하는 옵션을 전달.
+    이 옵션은 액티비티 간에 공유되는 뷰를 포함할 수 있기 때문에, 프레임워크가 애니메이션 표시 중 뷰를 연결할 수 있음.
+    Metrial 디자인 앱의 액티비티 전환은 공통 요소 간의 모션 및 변환을 통해 서로 다른 상태 간에 시각적 연결을 제공함.
+    들어가기 및 나가기 전환 액티비티 간 공유 요소의 전환을 위한 맞춤 애니메이션을 지정할 수 있음.
+        -들어가기 전환은 액티비티의 보기가 테마에 들어가는 방식을 결정함.
+        -나가기 전환에 따라 액티비티의 보기가 테마를 나가는 방식이 결정.
+        -공유 요소 전환에 따라 두 액티비티 간 공유되는 보기가 이 두 액티비티 간 전환 되는 방식이 결정됨.
+    Android에서는 다음과 같은 들어가기와 나가기 전환을 지원.
+        -explode: 보기를 테마의 중앙에서 안이나 밖으로 이동.
+        -slide: 보기를 장면의 테마의 가장자리 중 하나에서 안이나 밖으로 이동.
+        -fade: 불투명도를 변경하여 보기를 추가하거나 장면에서 삭제함.
+    Visibility 클래스를 확장하는 모든 전환은 들어가기 또는 나가기 전환으로 지원.
+    Android에서는 다음 공유 요소 전환도 지원.
+        -changeBounds: 타겟 보기의 레이아웃 경계에서 변경사항을 애니메이션으로 보여줌.
+        -changeClipBounds: 타겟 보기의 경사 제한 경계에 있는 변경사항을 애니메이션으로 보여줌.
+        -changeTransform: 타겟 보기의 배율 및 회전 변경사항을 애니메이션으로 보여줌.
+        -changeImageTransform: 타겟 이미지의 크기 및 배율 변경사항을 애니메이션으로 보여줌.
+    앱에서 액티비티 전환을 사용할 경우, 들어가기 및 나가기 액티비티 간에 기본 크로스페이딩 전환이 활성화됨.
+        -시스템 버전 확인
+        액티비티 전환 API는 Android5.0(API 21) 이상에서 사용할 수 있음. 이전 버전의 Android와 호환선을 유지하려면 이러한 기능을 위한 API를 호출하기 전에 런타임
+        시스템 version을 확인.
+
+            // Check if we're running on Android 5.0 or higher
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                // Apply activity transition
+            } else {
+                // Swap without transition
+            }
+
+        -맞춤 전환 지정
+        먼저, 머터리얼 테마에서 상속하는 스타일을 정의할 때 android:windowActivityTransitions 속성을 통해 창 콘텐츠 전환을 사용 설정. 들어가기, 나가기 및 공유 요소
+        전환도 스타일 정의에서 지정할 수 있음.
+
+            <style name="BaseAppTheme" parent="android:Theme.Material">
+              <!-- enable window content transitions -->
+              <item name="android:windowActivityTransitions">true</item>
+
+              <!-- specify enter and exit transitions -->
+              <item name="android:windowEnterTransition">@transition/explode</item>
+              <item name="android:windowExitTransition">@transition/explode</item>
+
+              <!-- specify shared element transitions -->
+              <item name="android:windowSharedElementEnterTransition">
+                @transition/change_image_transform</item>
+              <item name="android:windowSharedElementExitTransition">
+                @transition/change_image_transform</item>
+            </style>
+
+        change_image_transform 전환은 다음과 같이 정의.
+
+            <!-- res/transition/change_image_transform.xml -->
+            <!-- (see also Shared Transitions below) -->
+            <transitionSet xmlns:android="http://schemas.android.com/apk/res/android">
+              <changeImageTransform/>
+            </transitionSet>
+
+        changeImageTransform 요소는 ChangeImageTransform 클래스에 해당. 대신, 코드에서 창 콘텐츠 전환을 사용 설정하려면 Window.requestFeature() 함수를 호출.
+
+            // inside your activity (if you did not enable transitions in your theme)
+            with(window) {
+                requestFeature(Window.FEATURE_CONTENT_TRANSITIONS)
+
+                // set an exit transition
+                exitTransition = Explode()
+            }
+
+        코드에서 전환을 지정하려면 Transition 객체를 사용하여 다음 함수를 호출.
+            -Window.setEnterTransition()
+            -Window.setExitTransition()
+            -Window.setSharedElementEnterTransition()
+            -Window.setSharedElementExitTransition()
+
+        setExitTransition() 및 setSharedElementExitTransition() 함수는 호출하는 액티비티의 나가기 전환을 정의.
+        setEnterTransition() 및 setSharedElementEnterTransition() 함수는 호출된 액티비티의 들어가기 전환을 정의.
+        전환 효과를 극대화하려면 호출하는 액티비티과 호출되는 액티비티 둘 다에서 창 콘텐츠 전환을 사용해야 함. 그러지 않으면 호출하는 액티비티이 나가기 전환을 시작하지만, 조정 또는 페이드와 같은 창 전환이 표시.
+        최대한 빨리 들어가기 전환을 시작하려면 호출되는 액티비티에서 Window.setAllowEnterTransitionOverlap() 함수를 사용합니다. 그러면 더욱 인상적인 들어가기 전환이 가능.
+
+        -전환을 사용하여 액티비티 시작
+        전환을 사용하고 액티비티의 나가기 전환을 설정하면 다음과 같이 다른 액티비티를 시작할 때 전환이 활성화.
+            startActivity(intent,
+                          ActivityOptions.makeSceneTransitionAnimation(this).toBundle())
+        두 번째 액티비티의 들어가기 전환을 설정하면 액티비티이 시작될 때 전환도 활성화. 다른 액티비티를 시작할 때 전환을 사용하지 않으려면 null 옵션 번들을 제공.
+
+        -공유 요소가 있는 액티비티 시작
+        공유 요소가 있는 두 액티비티 간에 화면 전환 애니메이션을 만들려면 다음을 수행.
+            1. 테마에서 창 콘텐츠 전환을 사용.
+            2. 스타일에서 공유 요소 전환을 지정.
+            3. 전환을 XML 리소스로 정의.
+            4. android:transitionName 속성을 사용하여 두 레이아웃 모두에서 공유 요소에 공통 이름을 지정.
+            5. ActivityOptions.makeSceneTransitionAnimation() 함수를 사용.
+
+            // get the element that receives the click event
+            val imgContainerView = findViewById<View>(R.id.img_container)
+
+            // get the common element for the transition in this activity
+            val androidRobotView = findViewById<View>(R.id.image_small)
+
+            // define a click listener
+            imgContainerView.setOnClickListener( {
+                val intent = Intent(this, Activity2::class.java)
+                // create the transition animation - the images in the layouts
+                // of both activities are defined with android:transitionName="robot"
+                val options = ActivityOptions
+                        .makeSceneTransitionAnimation(this, androidRobotView, "robot")
+                // start the new activity
+                startActivity(intent, options.toBundle())
+            })
+
+            코드에서 공유 동적 뷰를 생성할 때 View.setTransitionName() 함수를 사용하여 두 액티비티 모두의 공통 요소 이름을 지정.
+            두 번째 액티비티를 완료할 때 장면 전환 애니메이션을 역전시키려면 Activity.finish() 대신 Activity.finishAfterTransition() 함수를 호출.
+
+            -여러 공유 요소가 있는 액티비티 시작
+            두 개 이상의 공유 요소가 있는 두 액티비티 간에 장면 전환 애니메이션을 만들려면 android:transitionName 속성을 사용(또는 두 액티비티 모두에서 View.setTransitionName() 함수 사용)하여
+            두 레이아웃 모두의 공유 요소를 정의하고 다음과 같이 ActivityOptions 객체를 생성.
+
+            // Rename the Pair class from the Android framework to avoid a name clash
+            import android.util.Pair as UtilPair
+            ...
+            val options = ActivityOptions.makeSceneTransitionAnimation(this,
+                    UtilPair.create(view1, "agreedName1"),
+                    UtilPair.create(view2, "agreedName2"))
      */
